@@ -349,6 +349,14 @@
   const isNameSearch     = !!searchQuery;
   const query            = searchQuery || neighborhoodQuery;
 
+  // query comes straight from the URL, so it must be escaped before it ever
+  // reaches innerHTML.
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
   document.getElementById('modeLabel').textContent = isNameSearch ? '🔤 By Name:' : '📍 By Location:';
   document.getElementById('refineInput').value = query;
   document.getElementById('refineInput').addEventListener('keydown', e => {
@@ -517,11 +525,11 @@
     const countEl = document.getElementById('resultsCount');
 
     titleEl.innerHTML = isNameSearch
-      ? `Results for <span>"${query}"</span>`
-      : `Gyms near <span>"${query}"</span>`;
+      ? `Results for <span>"${escapeHtml(query)}"</span>`
+      : `Gyms near <span>"${escapeHtml(query)}"</span>`;
 
     try {
-      const res  = await fetch('http://localhost:3000/api/gyms');
+      const res  = await fetch('/api/gyms');
       if (!res.ok) throw new Error('Server error');
       const gyms = await res.json();
 
@@ -550,7 +558,7 @@
         grid.innerHTML = `
           <div class="state-box">
             <div class="icon">🔍</div>
-            <p>No gyms found for <strong>"${query}"</strong>.</p>
+            <p>No gyms found for <strong>"${escapeHtml(query)}"</strong>.</p>
             <p><a href="index.html">← Try a different search</a></p>
           </div>`;
         return;

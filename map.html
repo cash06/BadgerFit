@@ -261,7 +261,7 @@
 
   async function loadGyms() {
     try {
-      const res  = await fetch('http://localhost:3000/api/gyms');
+      const res  = await fetch('/api/gyms');
       const gyms = await res.json();
       allGyms = gyms.filter(g => !SKIP.has(g.name) && g.coordinates);
 
@@ -525,9 +525,26 @@
 </script>
 
 <!-- Google Maps JS (for Places autocomplete on address pin) -->
-<script
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB7kVzLuB_DdC0Fezbwtyom_sLSjQJgL8k&libraries=places&callback=initAutocomplete"
-  async defer>
+<script>
+  // Key comes from the server rather than being baked into this page.
+  // The map itself is Leaflet/OpenStreetMap; this is only for address autocomplete.
+  (async () => {
+    try {
+      const res = await fetch('/api/maps-key');
+      if (!res.ok) throw new Error(`key endpoint returned ${res.status}`);
+      const { key } = await res.json();
+      if (!key) throw new Error('no key configured');
+
+      const tag = document.createElement('script');
+      tag.src = 'https://maps.googleapis.com/maps/api/js'
+        + `?key=${encodeURIComponent(key)}&libraries=places&callback=initAutocomplete`;
+      tag.async = true;
+      tag.onerror = () => console.warn('Address autocomplete unavailable: Maps JS failed to load.');
+      document.head.appendChild(tag);
+    } catch (err) {
+      console.warn('Address autocomplete unavailable:', err.message);
+    }
+  })();
 </script>
 </body>
 </html>

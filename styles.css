@@ -111,7 +111,7 @@ a {
 .hero {
   background-image:
     linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)),
-    url('https://recwell.wisc.edu/wp-content/uploads/sites/1075/2023/04/MZBakkeExterior8-900x600.jpg');
+    url('images/hero-home.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -280,7 +280,7 @@ a {
 .about-hero {
   background-image:
     linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
-    url('https://www.housing.wisc.edu/wp-content/uploads/sites/168/2017/08/2016-10-13-campus-aerial-70.jpg');
+    url('images/hero-about.jpg');
   background-size: cover;
   background-position: center;
   min-height: 340px;

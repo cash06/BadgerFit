@@ -25,6 +25,7 @@ function updateProgress() {
 // ── Google Places Autocomplete ────────────────────────────────────────────────
 
 let addressVerified = false; // tracks whether user picked from dropdown
+let autocompleteReady = false; // false if the Maps JS API never loaded
 
 // Auto complete for search bar
 function initAutocomplete() {
@@ -82,6 +83,8 @@ function initAutocomplete() {
     lngInput.value  = '';
     fmtInput.value  = '';
   });
+
+  autocompleteReady = true;
 }
 
 // ── Form validation on submit ─────────────────────────────────────────────────
@@ -90,8 +93,10 @@ document.getElementById('surveyForm').addEventListener('submit', (e) => {
   const input    = document.getElementById('locationInput');
   const errorMsg = document.getElementById('addressError');
 
-  // Only validate if the user typed something in the address field
-  if (input.value.trim() !== '' && !addressVerified) {
+  // Only validate if the user typed something in the address field.
+  // If the Maps API never loaded there is no dropdown to pick from, so requiring a
+  // verified pick would lock the user out — the server geocodes the raw text instead.
+  if (autocompleteReady && input.value.trim() !== '' && !addressVerified) {
     e.preventDefault();
     errorMsg.style.display = 'block';
     input.scrollIntoView({ behavior: 'smooth', block: 'center' });

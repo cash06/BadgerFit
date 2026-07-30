@@ -69,23 +69,70 @@ async function getGymDetails(placeId) {
   return response.data.result;
 }
 
+const DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
+// Merge a block into a day, keeping the widest window if that day already has one.
+// "HH:MM" sorts lexicographically the same way it sorts chronologically.
+function widenDay(formatted, dayName, open, close) {
+  const current = formatted[dayName];
+  if (!current) {
+    formatted[dayName] = { open, close };
+    return;
+  }
+  formatted[dayName] = {
+    open:  open  < current.open  ? open  : current.open,
+    close: close > current.close ? close : current.close,
+  };
+}
+
 function formatHours(openingHours) {
   if (!openingHours?.periods) return null;
 
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const periods = openingHours.periods;
   const formatted = {};
+  const hhmm = t => `${t.slice(0, 2)}:${t.slice(2)}`;
 
-  for (const period of openingHours.periods) {
-    const day = days[period.open.day];
-    formatted[day] = {
-      open: `${period.open.time.slice(0, 2)}:${period.open.time.slice(2)}`,
-      close: period.close
-        ? `${period.close.time.slice(0, 2)}:${period.close.time.slice(2)}`
-        : '23:59'
-    };
+  // Places represents "always open" as a single period with an open time of 0000 and
+  // no close. Keyed naively that produced a lone sunday entry and six missing days.
+  if (periods.length === 1 && !periods[0].close) {
+    for (const day of DAYS) formatted[day] = { open: '00:00', close: '23:59' };
+    return formatted;
   }
 
-  return formatted;
+  for (const period of periods) {
+    if (!period.open) continue;
+
+    const startDay = period.open.day;
+    const openTime = hhmm(period.open.time);
+
+    if (!period.close) {
+      widenDay(formatted, DAYS[startDay], openTime, '23:59');
+      continue;
+    }
+
+    const endDay    = period.close.day;
+    const closeTime = hhmm(period.close.time);
+
+    if (endDay === startDay && closeTime > openTime) {
+      widenDay(formatted, DAYS[startDay], openTime, closeTime);
+      continue;
+    }
+
+    // The block runs past midnight, so it covers several calendar days: the first day
+    // runs to midnight, any whole day in between is open around the clock, and the last
+    // day runs from midnight to the close time. Previously only the start day survived.
+    widenDay(formatted, DAYS[startDay], openTime, '23:59');
+
+    for (let d = (startDay + 1) % 7; d !== endDay; d = (d + 1) % 7) {
+      widenDay(formatted, DAYS[d], '00:00', '23:59');
+    }
+
+    if (closeTime !== '00:00') {
+      widenDay(formatted, DAYS[endDay], '00:00', closeTime);
+    }
+  }
+
+  return Object.keys(formatted).length > 0 ? formatted : null;
 }
 
 function buildGymObject(details) {

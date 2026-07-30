@@ -208,8 +208,30 @@
     <!-- Button to go to output page -->
     <button class="submit-btn">Find My Badger Gym →</button>
 </form>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAaEnULa66bKAs5F9yjueKOOyvgpR5uq1k&libraries=places&callback=initAutocomplete" async defer></script>
 <script src="survey.js"></script>
+<script>
+  // Load the Maps JS API with a key fetched from the server, so no key is baked into
+  // this page. Injected only after survey.js has defined window.initAutocomplete —
+  // an async <script> tag could otherwise fire the callback before that assignment ran.
+  (async () => {
+    try {
+      const res = await fetch('/api/maps-key');
+      if (!res.ok) throw new Error(`key endpoint returned ${res.status}`);
+      const { key } = await res.json();
+      if (!key) throw new Error('no key configured');
+
+      const tag = document.createElement('script');
+      tag.src = 'https://maps.googleapis.com/maps/api/js'
+        + `?key=${encodeURIComponent(key)}&libraries=places&callback=initAutocomplete`;
+      tag.async = true;
+      tag.onerror = () => console.warn('Address autocomplete unavailable: Maps JS failed to load.');
+      document.head.appendChild(tag);
+    } catch (err) {
+      // Survey still works — the server geocodes the typed address instead.
+      console.warn('Address autocomplete unavailable:', err.message);
+    }
+  })();
+</script>
 
 <footer style="text-align:center;padding:1.5rem;background:#111;border-top:1px solid #2a2a2a;color:#444;font-size:0.85rem;margin-top:3rem;">
     <p>© 2025 BadgerFit · Madison, WI · CheeseHacks Hackathon</p>
